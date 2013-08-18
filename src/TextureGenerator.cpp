@@ -1,3 +1,28 @@
+/**
+ * Copyright (c) 2013, Hugo Hernan Saez
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met: 
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer. 
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution. 
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "TextureGenerator.hpp"
 
 #include <cmath>
@@ -17,13 +42,19 @@ TextureGenerator::~TextureGenerator( void )
 	cleanup();
 }
 
-bool TextureGenerator::execute( std::string text )
+bool TextureGenerator::execute( std::string text, std::string output )
 {
 	_pixelSize = _width / std::sqrt( text.length() );
 	_cursorX = 0;
 	_cursorY = 0;
 
 	memset( &_buffer[ 0 ], 0, sizeof( unsigned char ) * _buffer.size() );
+
+	_glyphs.open( output + ".txt" );
+	if ( !_glyphs.is_open() ) {
+		std::cout << "Cannot open file " << ( output + ".txt" ) << std::endl;
+		return false;
+	}
 
 	int error = FT_Set_Pixel_Sizes( _face, _pixelSize, 0 );
 	if ( error != 0 ) {
@@ -35,13 +66,10 @@ bool TextureGenerator::execute( std::string text )
 		pushChar( text[ n ] );
 	}
 
-	return true;
-}
+	saveTexture( output + ".tga" );
+	saveGlyphs( output + ".txt" );
 
-void TextureGenerator::save( std::string fileName )
-{
-	saveTexture( fileName + ".tga" );
-	saveGlyphs( fileName + ".txt" );
+	return true;
 }
 
 bool TextureGenerator::init( void )
@@ -96,13 +124,13 @@ void TextureGenerator::pushChar( char c )
 		_cursorY += _pixelSize;
 	}
 
-	std::cout << c 
+	_glyphs << c 
 		<< " " << ( float ) _cursorX / ( float ) _width 
 		<< " " << ( float ) _cursorY / ( float ) _height
 		<< " " << ( float ) _face->glyph->bitmap.width / ( float ) _width
 		<< " " << ( float ) _pixelSize / ( float ) _height
-		<< " " << metrics.horiAdvance / 64
-		<< std::endl;
+		<< " " << ( float ) ( metrics.horiAdvance / 64 ) / ( float ) _width
+		<< "\n";
 
 	writeBuffer( _face->glyph, _cursorX, _cursorY + _pixelSize - ( metrics.horiBearingY ) / 64 );
 
