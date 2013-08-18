@@ -1,0 +1,10 @@
+.DS_Store
+
+fontgen
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+
+result.tga
+result.txt
