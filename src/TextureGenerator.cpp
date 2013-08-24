@@ -44,7 +44,7 @@ TextureGenerator::~TextureGenerator( void )
 
 bool TextureGenerator::execute( std::string text, std::string output )
 {
-	_pixelSize = _width / std::sqrt( text.length() );
+	_pixelSize = ( int )( std::min( _width, _height ) / std::ceil( std::sqrt( text.length() ) ) );
 	_cursorX = 0;
 	_cursorY = 0;
 
@@ -124,17 +124,22 @@ void TextureGenerator::pushChar( char c )
 		_cursorY += _pixelSize;
 	}
 
-	_glyphs << c 
+	_glyphs 
+		<< ( int ) c 
+		<< " " << ( float ) ( metrics.width / 64 ) / ( float ) _pixelSize	
+		<< " " << ( float ) ( metrics.height / 64 ) / ( float ) _pixelSize
+		<< " " << ( float ) ( metrics.horiBearingX / 64 ) / ( float ) _pixelSize
+		<< " " << ( float ) ( metrics.horiBearingY / 64 ) / ( float ) _pixelSize
+		<< " " << ( float ) ( metrics.horiAdvance / 64 ) / ( float ) _pixelSize
 		<< " " << ( float ) _cursorX / ( float ) _width 
 		<< " " << ( float ) _cursorY / ( float ) _height
 		<< " " << ( float ) _face->glyph->bitmap.width / ( float ) _width
-		<< " " << ( float ) _pixelSize / ( float ) _height
-		<< " " << ( float ) ( metrics.horiAdvance / 64 ) / ( float ) _width
+		<< " " << ( float ) _face->glyph->bitmap.rows / ( float ) _height
 		<< "\n";
 
-	writeBuffer( _face->glyph, _cursorX, _cursorY + _pixelSize - ( metrics.horiBearingY ) / 64 );
+	writeBuffer( _face->glyph, _cursorX, _cursorY );
 
-	_cursorX += metrics.horiAdvance / 64;
+	_cursorX += _pixelSize;
 }
 
 void TextureGenerator::writeBuffer( FT_GlyphSlot &slot, int x, int y )
@@ -163,11 +168,11 @@ void TextureGenerator::writeBuffer( FT_GlyphSlot &slot, int x, int y )
 	}
 }
 
-void TextureGenerator::saveTexture( std::string fileName )
+void TextureGenerator::saveTexture( std::string fileName, bool greyscale )
 {
 	unsigned char identsize = 0;
     unsigned char colorMapType = 0;
-    unsigned char imageType = 3;	// grayscale
+    unsigned char imageType = greyscale ? 3 : 2;	// 2 - rgb, 3 - greyscale
     unsigned short colorMapStart = 0;
     unsigned short colorMapLength = 0;
     unsigned char colorMapBits = 0;
@@ -175,7 +180,7 @@ void TextureGenerator::saveTexture( std::string fileName )
     unsigned short ystart = 0;
     unsigned short width = _width;
     unsigned short height = _height;
-    unsigned char bits = 8;
+    unsigned char bits = greyscale ? 8 : 24;
     unsigned char descriptor = 0;
 
 	FILE *out = fopen( fileName.c_str(), "wb" );
@@ -193,7 +198,16 @@ void TextureGenerator::saveTexture( std::string fileName )
 	fwrite( &bits, sizeof( unsigned char ), 1, out );
 	fwrite( &descriptor, sizeof( unsigned char ), 1, out );
 
-	fwrite( &_buffer[ 0 ], _width * _height, 1, out );
+	if ( greyscale ) {
+		fwrite( &_buffer[ 0 ], _width * _height, sizeof( unsigned char ), out );
+	}
+	else {
+		for ( int i = 0; i < _width * _height; i++ ) {
+			for ( int j = 0; j < 3; j++ ) {
+				fwrite( &_buffer[ i ], 1, sizeof( unsigned char ), out );
+			}
+		}
+	}
 
 	fclose( out );
 }

@@ -48,7 +48,7 @@ private:
 	void cleanup( void );
 	void pushChar( char c );
 	void writeBuffer( FT_GlyphSlot &slot, int x, int y );
-	void saveTexture( std::string fileName );
+	void saveTexture( std::string fileName, bool greyscale = true );
 	void saveGlyphs( std::string filename );
 
 	std::vector< unsigned char > _buffer;

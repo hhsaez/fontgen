@@ -25,33 +25,38 @@
 
 #include "TextureGenerator.hpp"
 
+std::string extractFontName( std::string input )
+{
+	std::string filename = input.substr( input.find_last_of( "/" ) + 1 );
+	std::string fontName = filename.substr( 0, filename.find_last_of( "." ) );
+	return fontName;
+}
+
 int main( int argc, char **argv )
 {
 	if ( argc < 2 ) {
-		std::cout << "usage: " << argv[ 0 ] << " ttf_file [text]" << std::endl;
+		std::cout << "usage: " << argv[ 0 ] << " ttf_file [texture_size]" << std::endl;
 		return -1;
 	}
 
-	std::string fontFace( argv[ 1 ] );
+	std::string fontFile( argv[ 1 ] );
+	std::string fontName = extractFontName( fontFile );
 
-	std::string text;
-	if ( argc >= 3 ) {
-		text = argv[ 2 ];
-	}
-	else {
-		char buffer[ 97 ];
-		for ( char i = 0; i < 95; i++ ) {
-			buffer[ i ] = 32 + i;
-		}
-		buffer[ 96 ] = '\0';
-		text = buffer;
-	}
+	int size = argc >= 3 ? atoi( argv[ 2 ] ) : 512;
 
-	TextureGenerator generator( fontFace, 512, 512 );
-	if ( generator.execute( text, "result" ) ) {
-#ifdef __APPLE__
-		system( "open result.tga" );
-		//system( "cat result.txt" );
+	// generate the list of characters to be processed
+	char buffer[ 97 ];
+	for ( char i = 0; i < 95; i++ ) {
+		buffer[ i ] = 32 + i;
+	}
+	buffer[ 96 ] = '\0';
+	std::string text = buffer;
+
+	TextureGenerator generator( fontFile, size, size );
+	if ( generator.execute( text, fontName ) ) {
+#ifdef __APPLE__		
+		system( ( std::string( "open " ) + fontName + ".tga" ).c_str() );
+		system( ( std::string( "open " ) + fontName + ".txt" ).c_str() );
 #endif
 	}
 
